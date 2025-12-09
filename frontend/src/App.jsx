@@ -9,13 +9,19 @@ const FILTER_OPTIONS = {
   region: ['North', 'South', 'East', 'West'],
   gender: ['Male', 'Female'],
   category: ['Electronics', 'Clothing', 'Beauty'],
-  paymentMethod: ['Credit Card', 'Debit Card', 'PayPal', 'Net Banking', 'Cash'],
-  tags: ['Sale', 'New', 'Premium', 'Discounted', 'Bulk']
+  paymentMethod: ['Credit Card', 'Debit Card', 'Wallet', 'Net Banking', 'Cash', 'UPI'],
+  tags: ['makeup', 'fragrance-free', 'smart', 'skincare', 'accessories', 'wireless', 'unisex', 'organic', 'gadgets', 'beauty', 'casual', 'formal', 'portable', 'fashion', 'cotton']
 };
 
 function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [stats, setStats] = useState({
+      totalUnits: 0,
+      totalAmount: 0,
+      totalDiscount: 0
+  });
 
   // State
   const [params, setParams] = useState({
@@ -46,14 +52,16 @@ function App() {
         region: params.region.join(','),
         gender: params.gender.join(','),
         category: params.category.join(','),
-        
-        // Just for UI
-        paymentMethod: '', 
-        tags: ''       
+        paymentMethod: params.paymentMethod.join(','),
+        tags: params.tags.join(',')  
       };
       
       const result = await fetchSales(apiParams);
       setData(result.data || []);
+
+      if (result.stats) {
+          setStats(result.stats);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -76,9 +84,29 @@ function App() {
   const handleSortChange = (e) => {
     const value = e.target.value;
     let newSort = {};
-    if (value === 'date-newest') newSort = { sortBy: 'sale.date', order: 'desc' };
-    else if (value === 'quantity-desc') newSort = { sortBy: 'sale.quantity', order: 'desc' };
-    else if (value === 'name-asc') newSort = { sortBy: 'customer.name', order: 'asc' };
+
+    switch (value) {
+        case 'date-newest':
+            newSort = { sortBy: 'sale.date', order: 'desc' };
+            break;
+        case 'date-oldest':
+            newSort = { sortBy: 'sale.date', order: 'asc' };
+            break;
+        case 'name-asc':
+            newSort = { sortBy: 'customer.name', order: 'asc' };
+            break;
+        case 'name-desc':
+            newSort = { sortBy: 'customer.name', order: 'desc' };
+            break;
+        case 'quantity-desc':
+            newSort = { sortBy: 'sale.quantity', order: 'desc' };
+            break;
+        case 'quantity-asc':
+            newSort = { sortBy: 'sale.quantity', order: 'asc' };
+            break;
+        default:
+            newSort = { sortBy: 'sale.date', order: 'desc' };
+    }
     setParams(prev => ({ ...prev, ...newSort }));
   };
 
@@ -97,6 +125,13 @@ function App() {
       minAge: '',
       maxAge: ''
     });
+  };
+
+  const handleCopy = (text) => {
+    if (text) {
+      navigator.clipboard.writeText(text);
+      alert(`Copied ${text} to clipboard!`);
+    }
   };
 
   return (
@@ -171,10 +206,23 @@ function App() {
 
            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
              <span style={{fontSize: '0.85rem', color: '#666'}}>Sort by:</span>
-             <select onChange={handleSortChange} className="filter-dropdown">
-                <option value="date-newest">Date (Newest First)</option>
-                <option value="name-asc">Customer Name (A-Z)</option>
-                <option value="quantity-desc">Quantity (High to Low)</option>
+             <select 
+                onChange={handleSortChange} 
+                className="filter-dropdown"
+                defaultValue="date-newest"
+             >
+                <optgroup label="Date">
+                    <option value="date-newest">Date (Newest First)</option>
+                    <option value="date-oldest">Date (Oldest First)</option>
+                </optgroup>
+                <optgroup label="Name">
+                    <option value="name-asc">Customer Name (A-Z)</option>
+                    <option value="name-desc">Customer Name (Z-A)</option>
+                </optgroup>
+                <optgroup label="Quantity">
+                    <option value="quantity-desc">Quantity (High to Low)</option>
+                    <option value="quantity-asc">Quantity (Low to High)</option>
+                </optgroup>
              </select>
            </div>
         </div>
@@ -182,15 +230,18 @@ function App() {
         <div className="stats-row">
           <div className="stat-card">
             <div className="stat-title">Total units sold <Info size={12}/></div>
-            <div className="stat-value">10</div>
+            {/* Dynamic Value */}
+            <div className="stat-value">{stats.totalUnits.toLocaleString()}</div>
           </div>
           <div className="stat-card">
             <div className="stat-title">Total Amount <Info size={12}/></div>
-            <div className="stat-value">₹89,000</div>
+            {/* Dynamic Value */}
+            <div className="stat-value">₹ {stats.totalAmount.toLocaleString()}</div>
           </div>
            <div className="stat-card">
             <div className="stat-title">Total Discount <Info size={12}/></div>
-            <div className="stat-value">₹15,000</div>
+            {/* Dynamic Value */}
+            <div className="stat-value">₹ {stats.totalDiscount.toLocaleString()}</div>
           </div>
         </div>
 
@@ -221,7 +272,14 @@ function App() {
                   <td>{new Date(row.sale.date).toISOString().split('T')[0]}</td>
                   <td>{row.customer.id}</td>
                   <td><b>{row.customer.name}</b></td>
-                  <td>{row.customer.phone} <Copy size={12} className="copy-icon" /></td>
+                  <td>{row.customer.phone}
+                    <Copy 
+                        size={12} 
+                        className="copy-icon" 
+                        onClick={() => handleCopy(row.customer.phone)}
+                        title="Copy Phone Number"
+                    />
+                  </td>
                   <td>{row.customer.gender}</td>
                   <td>{row.customer.age}</td>
                   <td><b>{row.product.category}</b></td>
