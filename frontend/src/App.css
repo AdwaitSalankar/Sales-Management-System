@@ -217,19 +217,19 @@ td {
 }
 
 .page-btn {
-  width: 32px;
+  width: fit-content;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #ddd;
-  background: rgb(100, 100, 100);
+  background: rgb(255, 255, 255);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .page-btn.active {
-  background: #333;
+  background: #ababab;
   color: white;
   border-color: #333;
 }

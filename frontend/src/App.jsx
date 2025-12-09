@@ -17,6 +17,8 @@ function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [totalPages, setTotalPages] = useState(1);
+
   const [stats, setStats] = useState({
       totalUnits: 0,
       totalAmount: 0,
@@ -58,6 +60,10 @@ function App() {
       
       const result = await fetchSales(apiParams);
       setData(result.data || []);
+
+      if (result.pagination) {
+          setTotalPages(result.pagination.totalPages);
+      }
 
       if (result.stats) {
           setStats(result.stats);
@@ -132,6 +138,28 @@ function App() {
       navigator.clipboard.writeText(text);
       alert(`Copied ${text} to clipboard!`);
     }
+  };
+
+  const generatePagination = () => {
+    const current = params.page;
+    const last = totalPages;
+    const delta = 4;
+    const range = [];
+
+    if (last <= 7) {
+      for (let i = 1; i <= last; i++) range.push(i);
+      return range;
+    }
+
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', last];
+    }
+
+    if (current >= last - 3) {
+      return [1, '...', last - 4, last - 3, last - 2, last - 1, last];
+    }
+
+    return [1, '...', current - 1, current, current + 1, '...', last];
   };
 
   return (
@@ -299,13 +327,31 @@ function App() {
            <button 
               className="page-btn"
               disabled={params.page === 1}
+              style={{ color: '#000000ff' }}
               onClick={() => setParams({...params, page: params.page - 1})}
            >
              &lt;
            </button>
-           <span style={{padding: '5px 10px', fontSize: '0.9rem'}}>Page {params.page}</span>
+           
+           {generatePagination().map((pageNum, index) => (
+             pageNum === '...' ? (
+               <span key={`dots-${index}`} style={{ padding: '0 8px', color: '#000000ff' }}>...</span>
+             ) : (
+               <button 
+                 key={pageNum}
+                 className={`page-btn ${params.page === pageNum ? 'active' : ''}`}
+                 style={{ color: '#000000ff' }}
+                 onClick={() => setParams({...params, page: pageNum})}
+               >
+                 {pageNum}
+               </button>
+             )
+           ))}
+
            <button 
               className="page-btn"
+              disabled={params.page === totalPages}
+              style={{ color: '#000000ff' }}
               onClick={() => setParams({...params, page: params.page + 1})}
            >
              &gt;
